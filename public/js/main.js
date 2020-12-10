@@ -1,9 +1,17 @@
 const message_form = document.getElementById('new-message');
 const socket = io();
 const messages = document.getElementById('messages');
+const connectedUsers = document.getElementById('connectedUsers');
 
+// current name to display
 var name = "";
+
+// single active room
 var room = "";
+
+// room: Set of online users
+const onlineUsers = new Map();
+
 
 /**
  * When this client 'connect's to the server, emit a message to include this user's name
@@ -13,22 +21,23 @@ socket.on('connect', ()=>{
     room = prompt("Enter the room you'd like to join", "general");
     socket.emit('new-user', {'name': name, 'room': room});
     let connectedMsg = document.createElement('li');
-    connectedMsg.innerText = `You (${name}) have connected`;
-    messages.appendChild(connectedMsg);
-    console.log(`emitted new-user: ${name}`);
+    connectedMsg.innerText = name;
+    connectedUsers.appendChild(connectedMsg);
+    
+    onlineUsers.set(room, new Set());
 });
-
-
 
 /**
  * When a 'new-user' message is emitted from the server, display the message on the html
  */
 socket.on('new-user', (userDetails) =>{
-    let newUserMessage = document.createElement('li');
-    newUserMessage.innerText = `${userDetails.name} has connected`;
-    messages.appendChild(newUserMessage);
+    // Display connected users on the right
+    let newUser = document.createElement('li');
+    newUser.innerText = userDetails.name;
+    connectedUsers.appendChild(newUser);
+    onlineUsers.get(room).add(userDetails.name);
+    console.log(`'new-user' emitted for: ${userDetails.name}`);
 });
-
 
 /**
  * Event for submitting a message on the form
@@ -69,10 +78,31 @@ socket.on('user-typing', (packet) => {
 
 });
 
-
 /**
- * TODO: Retreive most recent 15 messages
+ * When recent messages are received, append them to the chat window
  */
 socket.on('recent-msgs', (packet) => {
-
+    for(let i = packet.length - 1; i > -1; --i){
+        let message = document.createElement('li');
+        message.innerText = `${packet[i].name}: ${packet[i].message}`;
+        messages.append(message);
+    }
 });
+
+/**
+ * Getting all online users for a room and displaying it for the current users
+ */
+socket.on('current-users', (packet) => {
+    for(user of packet){
+
+        if(onlineUsers.get(room).has(user)){
+            continue;
+        }
+        onlineUsers.get(room).add(user);
+        let onlineUser = document.createElement('li');
+        onlineUser.innerText = user;
+        connectedUsers.appendChild(onlineUser);
+        console.log("Added: " + user);
+    }
+});
+
