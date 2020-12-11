@@ -1,17 +1,20 @@
+require('dotenv').config()
 const express = require('express');
 const app = express();
 const http = require('http').createServer(app);
 const io = require('socket.io')(http);
 const MongoClient = require('mongodb').MongoClient;
-const url = "mongodb://localhost:127.0.0.1:27017/";
+const url = process.env.MONGO_URL;
+const auth = require('./auth');
 
-const dbName = "chat";
+// name of the collection where chat rooms are saved
+const dbName = process.env.DB_NAME;
 
 const client = new MongoClient(url, { useUnifiedTopology: true });
 
-// gives access to files in our public folder
 app.use(express.static('public'));
-
+app.use(express.json());
+app.use("/auth",auth)
 /**
  * NOTE: Eventually do caching of messages depending on when last accessed/used, just caching in general
  */
