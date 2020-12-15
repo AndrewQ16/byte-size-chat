@@ -5,16 +5,33 @@ const http = require('http').createServer(app);
 const io = require('socket.io')(http);
 const MongoClient = require('mongodb').MongoClient;
 const url = process.env.MONGO_URL;
-const auth = require('./auth');
-
-// name of the collection where chat rooms are saved
-const dbName = process.env.DB_NAME;
-
+const collection = process.env.DB;
+console.log(`Using collection: ${collection}`);
 const client = new MongoClient(url, { useUnifiedTopology: true });
+var dbName = process.env.DB;
+var auth;
 
 app.use(express.static('public'));
 app.use(express.json());
-app.use("/auth",auth)
+
+
+client.connect()
+    .then((value)=>{
+       auth = require('./auth')(client.db(dbName), process.env.USERS);
+       app.use("/auth",auth);
+    })
+    .catch(res => {
+     throw res;   
+    });
+// name of the collection where chat rooms are saved
+
+
+
+
+app.get('/test', (req, res) =>{
+    res.status(200).send('helllooooo!');
+});
+
 /**
  * NOTE: Eventually do caching of messages depending on when last accessed/used, just caching in general
  */
@@ -27,18 +44,12 @@ const roomUsers = new Map();
  // Here we are defining event listeners for the socket once a 'connection' is established
 io.on('connection', (socket) => {
 
-    socket.on('new-user',(packet) => {
+    socket.on('new-user', async (packet) => {
         connectedUsers.set(socket.id, {'name': packet.name, 'room': packet.room});
-        socket.join(packet.room);
-
-        client.connect(async function(err, client) {
-            let db = client.db(dbName);
-
-            let retreivedMsgs = await db.collection(packet.room).find().sort({'date': -1}).limit(3).toArray();
-            
-            io.to(socket.id).emit('recent-msgs', retreivedMsgs);
-        });
-
+        socket.join(packet.room);        
+        let db = client.db(dbName);
+        let retreivedMsgs = await db.collection(packet.room).find().sort({'date': -1}).limit(3).toArray();
+        io.to(socket.id).emit('recent-msgs', retreivedMsgs);
 
         // Gets the current users in a room to emit back to the client
         if(!roomUsers.has(packet.room)){
@@ -99,3 +110,6 @@ const port = 3000;
 http.listen(port, () => {
     console.log(`listening on *:${port}`);
 });
+
+// export default http;
+module.exports = http;

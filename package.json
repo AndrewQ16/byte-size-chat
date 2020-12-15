@@ -4,7 +4,8 @@
   "description": "socket.io chat app",
   "main": "index.js",
   "scripts": {
-    "devStart": "nodemon server.js",
+    "devStart": "nodemon --inspect index.js",
+    "check": "nodemon index.js",
     "test": "mocha --ui tdd"
   },
   "author": "",
@@ -19,6 +20,7 @@
     "chai": "^4.2.0",
     "chai-http": "^4.3.0",
     "mocha": "^8.2.1",
-    "nodemon": "^2.0.6"
+    "nodemon": "^2.0.6",
+    "zombie": "^6.1.4"
   }
 }
