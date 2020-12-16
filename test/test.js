@@ -1,13 +1,10 @@
-if(process.env.NODE_ENV == 'dev'){
-    require('dotenv').config({path: './.env'});
-} else if (process.env.NODE_ENV == 'test'){
-    require('dotenv').config({path: './.env.test'});
-}
-
+require('dotenv').config({path: './.env.test'});
 var chai = require('chai');
-var assert = chai.assert;
 var chaiHttp = require('chai-http');
 var http = require('../index')
+var MongoClient = require('mongodb').MongoClient;
+
+var assert = chai.assert;
 chai.use(chaiHttp);
 
 
@@ -25,9 +22,66 @@ suite('Test Express sample endpoint', ()=>{
     });
 });
 
-/**
- * Not sure how to make Mocha end the program once the tests are done.
- */
-suiteTeardown(() =>{
-    http.close();
+suite('Test registration ', ()=>{
+    test('Test valid registration', (done)=>{
+        chai    
+            .request(http)
+            .post('/auth/register')
+            .send({'username':'fakeuser1',
+            'email':'sample@gmail.com',
+            'password':'notyethashed'})
+            .end((err, res)=>{
+                assert.equal(res.status, 201);
+                assert.equal(res.text,'User created!');
+                done();
+            });
+        
+    });
+
+    test('Test unavailable username', (done)=>{
+        chai    
+            .request(http)
+            .post('/auth/register')
+            .send({'username':'fakeuser1',
+            'email':'random@gmail.com',
+            'password':'notyethashed'})
+            .end((err, res)=>{
+                assert.equal(res.status, 500);
+                assert.equal(res.text,'User exists!');
+                done();
+            });
+        
+    });
+
+    test('Test unavailable email', (done)=>{
+
+        chai    
+            .request(http)
+            .post('/auth/register')
+            .send({'username':'fakeuser2',
+            'email':'sample@gmail.com',
+            'password':'notyethashed'})
+            .end((err, res)=>{
+                assert.equal(res.status, 500);
+                assert.equal(res.text,'Email registered!');
+                done();
+            });
+        
+    });
+
+    suiteTeardown(()=>{
+        // delete the 'fakeuser1' from the test db
+        let client = new MongoClient(process.env.MONGO_URL, { useUnifiedTopology: true });
+        client.connect()
+            .then(()=>{
+                let db = client.db(process.env.DB);
+                db.collection(process.env.USERS).deleteOne({'username':'fakeuser1',
+                'email':'sample@gmail.com',
+                'password':'notyethashed'});
+            })
+            .catch((err) =>{
+                throw err;
+            })
+    });
 });
+
