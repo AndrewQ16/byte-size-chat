@@ -8,11 +8,7 @@ const router = express.Router();
 const url = process.env.MONGO_URL;
 var db;
 var accounts_collection;
-router.use(function timeLog( req, res, next) {
-    console.log('Time: ', Date.now());
-    
-    next();
-});
+
 
 router.post('/login', (req, res, next)=>{
     res.status(200).send("Login page")

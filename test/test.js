@@ -69,6 +69,18 @@ suite('Test registration ', ()=>{
         
     });
 
+    test('Test empty payload', (done)=>{
+        chai    
+            .request(http)
+            .post('/auth/register')
+            .send()
+            .end((err, res)=>{
+                assert.equal(res.status, 400);
+                assert.equal(res.text,'Fields are empty');
+                done();
+            });
+    });
+
     suiteTeardown(()=>{
         // delete the 'fakeuser1' from the test db
         let client = new MongoClient(process.env.MONGO_URL, { useUnifiedTopology: true });
