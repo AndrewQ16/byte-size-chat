@@ -26,6 +26,10 @@ router.get('/', (req,res)=>{
  * The req will contain: desired username, email, password
  */
 router.post('/register', async (req, res)=>{
+
+    if(!req.body.username || !req.body.email || !req.body.password)
+        return res.status(400).send('Fields are empty');
+
     let collection = db.collection(accounts_collection)
     
     let username = await collection.findOne({'username': req.body.username});
