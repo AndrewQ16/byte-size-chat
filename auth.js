@@ -4,6 +4,7 @@
 require('dotenv').config()
 
 const express = require('express');
+const bcrypt = require('bcrypt');
 const router = express.Router();
 const url = process.env.MONGO_URL;
 var db;
@@ -40,7 +41,11 @@ router.post('/register', async (req, res)=>{
         return res.status(500).send('Email registered!');
     }
     //catch any errors thrown from the DB
-    collection.insertOne({'username': req.body.username, 'email': req.body.email, 'password': req.body.password})
+
+    let salt = await bcrypt.genSalt(5);
+    let hashedPassword = await bcrypt.hash(req.body.password, salt);
+
+    collection.insertOne({'username': req.body.username, 'email': req.body.email, 'password': hashedPassword})
         .then(()=> res.status(201).send('User created!'))
         .catch(()=> res.status(500).send('Error with registration.'));
 
