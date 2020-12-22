@@ -5,14 +5,57 @@ require('dotenv').config()
 
 const express = require('express');
 const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 const router = express.Router();
 const url = process.env.MONGO_URL;
 var db;
 var accounts_collection;
 
+// There is no cache right now for refresh tokens.
+// One can be added later like Redis.
+const refreshTokens = new Set();
 
-router.post('/login', (req, res, next)=>{
-    res.status(200).send("Login page")
+
+router.post('/login', async (req, res)=>{
+    let collection = db.collection(accounts_collection)
+    let user;
+    // username is either username and email
+    if(req.body.username && validateEmail(req.body.username)){
+        user = await collection.findOne({'email': req.body.username}); 
+    } else if(req.body.username) {
+        user = await collection.findOne({'username': req.body.username});
+        
+    } else {
+        // The value is null
+        return res.status(400).send('Fields were empty.');
+    }
+
+    if(user == null){
+        return res.status(400).send('No user found.');
+    }
+
+    try {
+        if(await bcrypt.compare(req.body.password, user.password)){
+            // Essentially remove the email and password from the user
+            // object that will be put in the JWT
+            user = {
+                'username': user.username
+            }
+            
+            const accessToken = generateAccessToken(user);
+            const refreshToken = jwt.sign(user, process.env.REFRESH_TOKEN_SECRET);
+            refreshTokens.add(refreshToken);
+            res.json({
+                'accessToken': accessToken,
+                'refreshToken': refreshToken
+            })
+        } else {
+            res.status(200).send('Incorrect password.')
+        }
+    } catch (err) {
+        console.log(err);
+        return res.status(500).send();
+    }
 });
 
 router.get('/', (req,res)=>{
@@ -51,6 +94,18 @@ router.post('/register', async (req, res)=>{
 
 });
 
+/**
+ * Grabbed from: https://stackoverflow.com/questions/46155/how-to-validate-an-email-address-in-javascript
+ * @param {*} email 
+ */
+function validateEmail(email) {
+    const re = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+    return re.test(email);
+}
+
+function generateAccessToken(user) {
+    return jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '50s'});
+}
 
 module.exports = function(_db, _accounts) {
     db = _db;
