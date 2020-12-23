@@ -45,12 +45,18 @@ router.post('/login', async (req, res)=>{
             const accessToken = generateAccessToken(user);
             const refreshToken = jwt.sign(user, process.env.REFRESH_TOKEN_SECRET);
             refreshTokens.add(refreshToken);
-            res.json({
-                'accessToken': accessToken,
-                'refreshToken': refreshToken
-            })
+            res.setHeader('Set-Cookie', [`accessToken=${accessToken}; Expires=${new Date(9999,12,1).toUTCString()}; Path=/; Secure`, `refreshToken=${refreshToken}`]);
+            return res.redirect(304, 'http://localhost:3000/');
+            
+            // Previously sent cookies as JSON but now is set a cookie
+            // res.json({
+            //     'accessToken': accessToken,
+            //     'refreshToken': refreshToken
+            // })
+
+            // Once logged in, redirect to "/"
         } else {
-            res.status(200).send('Incorrect password.')
+            return res.status(400).send('Incorrect password.')
         }
     } catch (err) {
         console.log(err);

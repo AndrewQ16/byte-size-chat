@@ -150,12 +150,12 @@ suite('Test login functionality', ()=>{
             .end((err, res)=>{
                 if(err) throw err;
 
-                assert.equal(res.status, 200);
-                assert.isNotEmpty(res.body);
-                // console.log(res.headers);
-                // assert.equal(res.headers.get('Content-Type'), 'application/json');
+                assert.equal(res.status, 304);
 
-                // Add an assertion for checking that both token formats in the JSON is: x.y.z 
+                // Doesn't show Set-Cookie
+                // assert.isNotEmpty(res.headers)
+
+
 
                 done();
             });

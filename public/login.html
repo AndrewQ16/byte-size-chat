@@ -1,24 +1,17 @@
 <!DOCTYPE html>
 <html>
-
     <head>
-
+        <script src="https://cdn.jsdelivr.net/npm/js-cookie@2/src/js.cookie.min.js"></script>
     </head>
 
     <body>
-
-        <form  id="register_form">
+        <form  id="login_form">
             <ul>
                 <li>
-                    <label for="username">Username:</label>
+                    <label for="username">Enter your username or email:</label>
                     <input type="text" id="username" name="username"/>
                 </li>
                     
-                <li>
-                    <label for="email">Email:</label>
-                    <input type="email" id="email" name="email"/>  
-                </li>
-
                 <li>
                     <label for="password">Password:</label>
                     <input type="password" id="password" name="password"/>
@@ -29,7 +22,7 @@
                 </li>
             </ul>
         </form>
-        
-        <script src="./registration/register.js"></script>
+
+        <script src="js/login.js"></script>
     </body>
 </html>
