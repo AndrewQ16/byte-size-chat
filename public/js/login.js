@@ -2,7 +2,6 @@ const form = document.getElementById('login_form');
 const username_input = document.getElementById('username');
 const password_input = document.getElementById('password');
 
-Cookies.set('foo', 'bar', { sameSite:'strict'});
 
 form.addEventListener('submit', async (event) => {
     event.preventDefault();
@@ -10,7 +9,7 @@ form.addEventListener('submit', async (event) => {
         'username': username_input.value,
         'password': password_input.value
     }
-
+    
     const response = await fetch('/auth/login', {
         method: 'POST',
         mode: 'same-origin',
@@ -20,8 +19,9 @@ form.addEventListener('submit', async (event) => {
         redirect: 'follow',
         body: JSON.stringify(data)
     });
-
+    console.log(`Will we redirect? ${response.redirected}`)
     if(response.redirected) {
+        console.log(`Redirect to ${response.url}`);
         window.location.href = response.url;
     }
 

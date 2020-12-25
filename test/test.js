@@ -1,7 +1,7 @@
 require('dotenv').config({path: './.env.test'});
 const chai = require('chai');
 const chaiHttp = require('chai-http');
-const http = require('../index')
+const http = require('../src/index.js')
 const MongoClient = require('mongodb').MongoClient;
 const bcrypt = require('bcrypt');
 const fetch = require('node-fetch')
@@ -141,24 +141,20 @@ suite('Test login functionality', ()=>{
         
     });
 
-    test('Login with username user', (done)=>{
-        chai    
-            .request(http)
+    test('Login with username user', ()=>{
+        var agent = chai.request.agent(http);
+        agent    
             .post('/auth/login')
             .send({'username':'Big Pops',
             'password':'123456'})
-            .end((err, res)=>{
-                if(err) throw err;
+            .then( res => {
+                assert.isNotNull(res.headers)
 
-                assert.equal(res.status, 304);
-
-                // Doesn't show Set-Cookie
-                // assert.isNotEmpty(res.headers)
-
-
-
-                done();
-            });
+                return agent.get('/chat.html')
+                    .then( rest=>{
+                        assert.equal(res.status, 200);
+                    })
+            })
     });
 
     test('Login with non-existent username', (done)=>{

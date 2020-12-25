@@ -1,6 +1,7 @@
 /**
  * Handle Socket creation (Socket.io: Socket class)
  */
+require('dotenv').config()
 
 module.exports = (http, _db) => {
     const io = require('socket.io')(http);
@@ -13,9 +14,27 @@ module.exports = (http, _db) => {
     const connectedUsers = new Map();
 
     const roomUsers = new Map();
+    const jwt = require('jsonwebtoken');
+    const cookie = require('cookie');
+    
+    io.use((socket, next) => {
+        let cookies = cookie.parse(socket.handshake.headers.cookie);
+        jwt.verify(cookies['accessToken'], process.env.ACCESS_TOKEN_SECRET, (err, user) => {
+            if (err) {
+                console.log(err)
+                throw err;
+            };
+            socket.user = user;
+            console.log(socket.user);
+            next();
+        })
+        
+    });
+    
 
     // Here we are defining event listeners for the socket once a 'connection' is established
     io.on('connection', (socket) => {
+        
 
         socket.on('new-user', async (packet) => {
             connectedUsers.set(socket.id, {'name': packet.name, 'room': packet.room});
@@ -73,3 +92,4 @@ module.exports = (http, _db) => {
 
     return io;
 }
+

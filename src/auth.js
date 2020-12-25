@@ -46,7 +46,7 @@ router.post('/login', async (req, res)=>{
             const refreshToken = jwt.sign(user, process.env.REFRESH_TOKEN_SECRET);
             refreshTokens.add(refreshToken);
             res.setHeader('Set-Cookie', [`accessToken=${accessToken}; Expires=${new Date(9999,12,1).toUTCString()}; Path=/; Secure`, `refreshToken=${refreshToken}`]);
-            return res.redirect(304, 'http://localhost:3000/');
+            return res.redirect(302, 'http://localhost:3000/chat.html');
             
             // Previously sent cookies as JSON but now is set a cookie
             // res.json({
@@ -110,7 +110,7 @@ function validateEmail(email) {
 }
 
 function generateAccessToken(user) {
-    return jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '50s'});
+    return jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1000s'});
 }
 
 module.exports = function(_db, _accounts) {
