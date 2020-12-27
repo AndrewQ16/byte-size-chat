@@ -13,13 +13,12 @@ var auth;
 var io;
 app.use(express.static('public'));
 app.use(express.json());
-
+app.use('/chat', cookieParser(),authenticateToken,express.static('private'));
 client.connect()
     .then((value)=>{
         auth = require('./auth')(client.db(dbName), process.env.USERS);
         io = require('./messenger')(http, client.db(dbName));
         app.use("/auth",auth);
-        app.use(cookieParser(),authenticateToken,express.static('private'));
     })
     .catch(res => {
      throw res;   
