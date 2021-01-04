@@ -11,9 +11,13 @@ const client = new MongoClient(url, { useUnifiedTopology: true });
 var dbName = process.env.DB;
 var auth;
 var io;
+
+
 app.use(express.static('public'));
 app.use(express.json());
 app.use('/chat', cookieParser(),authenticateToken,express.static('private'));
+
+//Once the connection to the DB can be made, add the /auth middleware and get the io variable
 client.connect()
     .then((value)=>{
         auth = require('./auth')(client.db(dbName), process.env.USERS);
@@ -37,13 +41,14 @@ http.listen(port, () => {
     console.log(`listening on *:${port}`);
 });
 
+/**
+ * Middleware for authenticating the authorization token
+ * @param {*} req 
+ * @param {*} res 
+ * @param {*} next 
+ */
 function authenticateToken(req, res, next){
-    // if(token == null) return res.sendStatus(401);
-    // jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, user) => {
-    //     if (err) return res.sendStatus(403);
-    //     req.user = user
-    //     next()
-    // });
+    
     jwt.verify(req.cookies['accessToken'], process.env.ACCESS_TOKEN_SECRET, (err, user) => {
         if (err) throw err;
         req.user = user;
