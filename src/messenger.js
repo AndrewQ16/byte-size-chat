@@ -17,6 +17,10 @@ module.exports = (http, _db) => {
     const jwt = require('jsonwebtoken');
     const cookie = require('cookie');
     
+    /**
+     * Middleware for authenticating the user. 
+     * TODO: Redirect to the login page or throw an authenticaion based error message
+     */
     io.use((socket, next) => {
         let cookies = cookie.parse(socket.handshake.headers.cookie);
         jwt.verify(cookies['accessToken'], process.env.ACCESS_TOKEN_SECRET, (err, user) => {
@@ -35,7 +39,10 @@ module.exports = (http, _db) => {
     // Here we are defining event listeners for the socket once a 'connection' is established
     io.on('connection', (socket) => {
         
-
+        /**
+         * When a user (socket) connects, tell all the users in it's current room that it has joined.
+         * And sends the user a list of all connected users to the room
+         */
         socket.on('new-user', async (packet) => {
             connectedUsers.set(socket.id, {'name': packet.name, 'room': packet.room});
             socket.join(packet.room);        
