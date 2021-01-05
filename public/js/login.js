@@ -20,8 +20,10 @@ form.addEventListener('submit', async (event) => {
         body: JSON.stringify(data)
     });
     console.log(`Will we redirect? ${response.redirected}`)
+
     if(response.redirected) {
         console.log(`Redirect to ${response.url}`);
+        localStorage.setItem('username', username_input.value);
         window.location.href = response.url;
     }
 

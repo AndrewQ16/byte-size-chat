@@ -13,7 +13,9 @@ module.exports = (http, _db) => {
     // socket.id : {name, room};
     const connectedUsers = new Map();
 
-    const roomUsers = new Map();
+    // Keeps track of all currently online users
+    const room_users = new Map();
+
     const jwt = require('jsonwebtoken');
     const cookie = require('cookie');
     
@@ -38,31 +40,42 @@ module.exports = (http, _db) => {
 
     // Here we are defining event listeners for the socket once a 'connection' is established
     io.on('connection', (socket) => {
-        
+
         /**
-         * When a user (socket) connects, tell all the users in it's current room that it has joined.
-         * And sends the user a list of all connected users to the room
+         * When a user joins, inform all rooms that the user is a part of, that they are now online
          */
-        socket.on('new-user', async (packet) => {
-            connectedUsers.set(socket.id, {'name': packet.name, 'room': packet.room});
-            socket.join(packet.room);        
+        socket.on('online', async (packet) =>{
+            // Get user data to find rooms that they are a part of
+            const user_info = await db.collection(env.process.USERS).findOne({'username': socket.user.username});
+            const rooms = user_info.rooms;
+
+            // emit every room with it's users to the current socket
+            // and every room that the user is now online
+            for(room of rooms){
+                // If the room exists then add the user with it's online status or just create the room then do that
+                if(!room_users.has(room)){
+                    room_users.set(room, new Set());
+                }
+                room_users.get(room).add({'username': socket.user.username, 'status': true});
+                
+                const room_info = await(db.collection(env.process.CHAT_ROOM_USERS).findOne({'room': room}));
+                const user_info = [];
+                for(username of room_info.users){
+                    if(room_users.get(room).has(username)){
+                        user_info.push({'username': username, 'status': true});
+                    } else {
+                        user_info.push({'username': username, 'status': false});
+                    }
+                    
+                }
+                io.to(socket.id).emit('room', {'room': room_info.room, 'users': user_info});
+                socket.to(room_info.room).emit('new-online', {'username': socket.user.username, 'room': room});
+            }
+
             
-            let retreivedMsgs = await db.collection(packet.room).find().sort({'date': -1}).limit(3).toArray();
-            io.to(socket.id).emit('recent-msgs', retreivedMsgs);
-
-            // Gets the current users in a room to emit back to the client
-            if(!roomUsers.has(packet.room)){
-                roomUsers.set(packet.room, new Set());
-            } 
-            io.to(socket.id).emit('current-users', Array.from(roomUsers.get(packet.room)));
-            roomUsers.get(packet.room).add(packet.name);
-
-
-            // socket.broadcast will emit to everyone but the sender, then it's just .to(someRoom).emit()
-            socket.broadcast.to(packet.room).emit('new-user', {'name': packet.name, 'room': packet.room});
-            
-            console.log(`${packet.name} has connected to room: "${packet.room}" w/ socket.id: ${socket.id}`); 
         });
+        
+        
 
         /**
          * When a client disconnects, delete them from the connectedUsers map and emit to the users of that
@@ -90,6 +103,8 @@ module.exports = (http, _db) => {
 
             io.to(packet.room).emit('chat message', packet);
         });
+
+        
     });
 
     /**

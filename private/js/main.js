@@ -3,40 +3,16 @@ const socket = io();
 const messages = document.getElementById('messages');
 const connectedUsers = document.getElementById('connectedUsers');
 
-// current name to display
-var name = "";
+const username = localStorage.getItem('username');
 
-// single active room
-var room = "";
-
-// room: Set of online users
-const onlineUsers = new Map();
+const room_users = new Map();
 
 
 /**
  * When this client 'connect's to the server, emit a message to include this user's name
  */
 socket.on('connect', ()=>{
-    name = prompt("Please enter your name", "Unknown");
-    room = prompt("Enter the room you'd like to join", "general");
-    socket.emit('new-user', {'name': name, 'room': room});
-    let connectedMsg = document.createElement('li');
-    connectedMsg.innerText = name;
-    connectedUsers.appendChild(connectedMsg);
     
-    onlineUsers.set(room, new Set());
-});
-
-/**
- * When a 'new-user' message is emitted from the server, display the message on the html
- */
-socket.on('new-user', (userDetails) =>{
-    // Display connected users on the right
-    let newUser = document.createElement('li');
-    newUser.innerText = userDetails.name;
-    connectedUsers.appendChild(newUser);
-    onlineUsers.get(room).add(userDetails.name);
-    console.log(`'new-user' emitted for: ${userDetails.name}`);
 });
 
 /**
@@ -54,9 +30,28 @@ message_form.addEventListener('submit',(e)=> {
 });
 
 /**
- * When the client receives a message
+ * When there's a new user online, set active status
  */
-socket.on('chat message', function(packet) {
+socket.on('new-online', (packet) => {
+    // Find the correct room key that the user is in and set the corresponding status to online
+    // NOTE: The room should already exist
+    room_users.get(packet.room).push({'username': packet.username, 'status': true});
+});
+
+/**
+ * Receive {room: name, users: [all users of this room with their 'status' as well (online status = 'status')
+ */
+socket.on('room', (packet) => {
+    room_users.set(packet.room, packet.users);
+
+    // NOTE: The default active room is 'general'
+});
+
+/**
+ * When the client receives a message display it.
+ * TODO: Make sure the chat only appears in the appropriate place
+ */
+socket.on('chat message', (packet) => {
     let message = document.createElement('li');
     message.innerText = `${packet.name}: ${packet.msg}`;
     messages.append(message);
@@ -89,20 +84,5 @@ socket.on('recent-msgs', (packet) => {
     }
 });
 
-/**
- * Getting all online users for a room and displaying it for the current users
- */
-socket.on('current-users', (packet) => {
-    for(user of packet){
 
-        if(onlineUsers.get(room).has(user)){
-            continue;
-        }
-        onlineUsers.get(room).add(user);
-        let onlineUser = document.createElement('li');
-        onlineUser.innerText = user;
-        connectedUsers.appendChild(onlineUser);
-        console.log("Added: " + user);
-    }
-});
 
